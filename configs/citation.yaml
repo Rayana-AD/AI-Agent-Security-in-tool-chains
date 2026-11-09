@@ -1,0 +1,12 @@
+# Citation verification harness settings
+citation:
+  allowed_bib_files:
+    - ref.bib
+  cache_dir: .cache/citation_verify
+  cache_ttl_days: 7
+  title_token_overlap_min: 0.92
+  author_lastname_overlap_min: 0.5
+  fail_closed_on_api_error: true
+  verify_nodes:
+    - verify
+  isolate_audit_files: true

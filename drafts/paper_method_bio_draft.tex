@@ -1,0 +1,264 @@
+\section{Method: A Bio-Inspired Continuity Harness}
+
+\subsection{Motivation: Transport, Not Post-Hoc Moderation}
+
+The primary vulnerability in tool-using language agents is the unauthorized transport of untrusted information across their control boundaries, leading to delayed adversarial actions. When an agent retrieves a web page, message, or API response, malicious instructions embedded in the payload can contaminate its plans, memory, or future action arguments without triggering immediate textual moderation. This shifts the safety challenge from one-shot input classification to regulated pathway transport.
+
+Our design is motivated by protein translocation. In biological systems, a peptide is folded into a transportable conformation, admitted through a selective channel, and stripped of transient signal sequences after crossing the membrane. This analogy yields three engineering principles for agent safety. First, potentially adversarial content should be reorganized before it is trusted, since attacks often rely on carefully ordered fragments that appear rational in their original sequence. Second, transport into a more consequential region should require directional authorization. Third, temporary routing or compliance markers should be removed downstream after they have served their transport role.
+
+This perspective leads to a three-stage harness: \textsc{Fold}, \textsc{Gate}, and \textsc{Cleave}. The stages form a closed-loop transport protocol rather than a stack of independent filters. \textsc{Fold} normalizes untrusted content, tests whether it remains coherent under controlled reorganization, and emits a compact provenance tag. \textsc{Gate} interprets that tag together with the direction of the next transition: read-like continuations are treated as passive, while actions that affect external state require stronger authorization. \textsc{Cleave} performs the minimal repair authorized by \textsc{Gate}; after repair, a lightweight carry state records what was removed and how the next transition should be constrained. This separation lets the harness preserve benign multi-step workflows while preventing injected instructions from becoming actions.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\caption{Compact view of the continuity harness.}
+\label{tab:compact-design}
+\begin{tabular}{p{0.18\columnwidth}p{0.26\columnwidth}p{0.45\columnwidth}}
+\toprule
+Stage & Analogue & Role \\
+\midrule
+\textsc{Fold} & chaperone & organize, reflect, and stress-test untrusted content before trust transfer \\
+\textsc{Gate} & channel & authorize passive consumption or active externalization according to continuity and sensitivity \\
+\textsc{Cleave} & signal cut & remove transient transport markers and update lightweight carry state \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pipeline Overview}
+
+The harness wraps an existing tool-using agent at two transport boundaries: when untrusted \emph{tool output} enters the agent loop, and when the agent proposes a \emph{tool call}. At each boundary the same protocol runs in order: \textsc{Fold} senses and tags the content, \textsc{Gate} decides whether the transition is passive, active, or blocked, \textsc{Cleave} performs authorized repair, and the carry state is updated for the next step. Internally, Fold consumes the user objective together with recent agent context from planning and review stages; Gate and Cleave never recompute Fold scores, but consume Fold's discrete provenance tag and the current carry level.
+
+This ordering is deliberate. Injected content in a tool output should first be sensed and, when Gate permits, stripped before the model re-reads it. A later sensitive tool call is then judged under the repaired state rather than under stale pre-repair evidence. The scalar risk equations below summarize this pipeline; the deployed system implements them as discrete tags, thresholds, and boundary-specific policies (Table~\ref{tab:impl-params}).
+
+\subsection{Fold: From Provenance Drift to Reflection and Shuffle}
+
+The sensing layer, \textsc{Fold}, parses and structures untrusted input into canonical schema components before validating its semantic coherence. This addresses a limitation of static schemas: an attacker can write a plan that looks well ordered, policy-aware, and rational while embedding a harmful action across fields or across steps. Fold therefore combines canonical organization, shuffle-based coherence checking, reflection-style provenance sensing, and a compact provenance tagger.
+
+\paragraph{Canonical organization.}
+Intermediate agent content is parsed into typed semantic fragments---claims, parameters, intended actions, and routing-like fields---using a deterministic chunker. Malformed content, missing arguments, and obvious structural violations are rejected before any trust transfer occurs.
+
+\paragraph{Shuffle coherence.}
+Fold applies shuffle checks \emph{after} canonical organization succeeds. We use two complementary variants depending on evaluation setting.
+
+\textit{Text shuffle supplement} (used in the targeted evasive-attack suite) operates on the fragment set $S_t=\{s_1,\ldots,s_n\}$ produced by canonical organization. Fold draws seeded permutations $\Pi_t=\{\pi_1,\ldots,\pi_K\}$ with $K=2$ by default and up to $K=5$ under elastic probing; permutations shuffle within fragment type while preserving type-block order. For each reconstructed order $\pi(S_t)$, Fold evaluates
+\begin{equation}
+\begin{aligned}
+R_{\mathrm{shuffle}}(S_t)
+&=
+\max_{\pi\in\Pi_t}
+\Bigl[
+  \mathbf{1}\{\mathrm{HarmfulCollocation}(\pi(S_t))\}\\
+&\quad+
+  \mathbf{1}\{\mathrm{Contradiction}(\pi(S_t))\}
+\Bigr],
+\end{aligned}
+\end{equation}
+where $\mathbf{1}\{\cdot\}$ returns $1$ if the condition is met and $0$ otherwise. Operationally, $\mathrm{HarmfulCollocation}(\cdot)$ flags adjacent harmful-instruction and execution cues that were separated in the original order, and $\mathrm{Contradiction}(\cdot)$ flags mutually incompatible claims in the reordered text (e.g., policy compliance adjacent to instruction override). The check inspects the shuffled text itself rather than its similarity to the original ordering.
+
+\textit{Feature-space shuffle} (used in the live AgentDojo configuration reported in Table~\ref{tab:main-results}) permutes attributions across review, tool-context, and proposed-action slots and tests whether a small provenance classifier's score remains stable under reordering. Hard cross-node rules additionally flag smuggled paths where review content and proposed actions disagree about the user's goal.
+
+\paragraph{Reflective Fold.}
+Fold includes a reflection-style provenance check to detect drift before a suspicious direction is smoothed into ordinary reasoning. A standard neural pipeline can diffuse an adversarial instruction after attention through softmax, activations, and MLP layers. Reflective Fold operates earlier, using raw dot-product geometry analogous to the pre-activation $QK^\top$ step.
+
+Let $P(\cdot)$ be a fixed deterministic signed-hash projection into $d=64$ dimensions. For the user objective $u$, review context $r$, and proposed transport slot $s$, define
+\begin{equation}
+\begin{aligned}
+    q &= \mathrm{unit}(P(u)),\\
+    (k_r,k_s) &= \bigl(\mathrm{unit}(P(r)),\mathrm{unit}(P(s))\bigr),
+\end{aligned}
+\end{equation}
+where $\mathrm{unit}(v)=v/\|v\|_2$. The probe computes raw attention-style scores
+\begin{equation}
+    \alpha_r = \frac{q^\top k_r}{\sqrt d},
+    \qquad
+    \alpha_s = \frac{q^\top k_s}{\sqrt d},
+\end{equation}
+reflects keys across the hyperplane orthogonal to $q$,
+\begin{equation}
+\begin{aligned}
+    \rho(k) &= k - 2(q^\top k)q,\\
+    \delta_{\mathrm{refl}} &= \|\rho(k_s)-\rho(k_r)\|_2,
+\end{aligned}
+\end{equation}
+and tracks $|\alpha_s-\alpha_r|$, sign flips, and loops without progress across process segments. A reflection warning is raised when these geometric signals exceed a block threshold of $0.40$.
+
+\paragraph{Provenance tagging.}
+Reflection metrics, shuffle outcomes, and cross-node context features are passed to a lightweight provenance tagger---a small rule-initiated classifier that emits a drift score, a discrete label, and a compact gate handoff tag. Scores above $0.20$ recommend blocking; scores above $0.35$ set a carry warning even when immediate blocking is not warranted. Fold therefore exports discrete evidence for Gate rather than making authorization decisions directly.
+
+The combined Fold risk
+\begin{equation}
+\begin{aligned}
+    R_{\mathrm{refl}}(t)
+    &=
+    w_1\delta_{\mathrm{refl}}
+    + w_2|\alpha_s-\alpha_r|\\
+    &\quad + w_3\ell_t,\\
+    R_F(t)
+    &=
+    \alpha R_{\mathrm{shuffle}}(S_t)
+    + \beta R_{\mathrm{refl}}(t),
+\end{aligned}
+\end{equation}
+where $\ell_t$ indicates a sign-flip loop without progress. This scalar expression is a design summary of the discrete signals; Gate consumes the emitted provenance tag and carry markers rather than recomputing $R_F(t)$.
+
+\subsection{Gate: Directional Authorization}
+
+\textsc{Gate} decides how costly a transition should be. The central distinction is between passive consumption and active externalization. Passive transitions include reading, summarizing, or carrying forward cleaned content. Active transitions include sending a message, writing state, making a booking, transferring value, or invoking another system in a way that externalizes contaminated context. These transitions require stronger authorization.
+
+Gate assigns each continuation to one of three semantic modes. A passive continuation proceeds after narrow repair. An active continuation is checked against the current provenance state and the sensitivity of the proposed action. A blocked continuation is held because Fold has identified a condition that should not be transported. In biological terms, Gate is the selective channel: it decides whether cargo is moving in a low-consequence direction or crossing into a compartment where stronger authorization is required.
+
+We summarize Gate as a directional policy mapping to a decision $G_t$. Let $B_t=1$ when Fold recommends blocking or the current transition is a sensitive uphill movement under lockdown, and let $A_t=1$ when $\mathrm{Sens}(a_t)>\Gamma(c_t)$ and $\mathrm{Cont}(u,a_t)<\theta_c$:
+\begin{equation}
+G_t =
+\begin{cases}
+\mathrm{block}, & B_t=1,\\
+\mathrm{active}, & A_t=1,\\
+\mathrm{passive}, & \text{otherwise.}
+\end{cases}
+\end{equation}
+Here, $a_t$ is the proposed action at step $t$, $c_t\in\{0,1,2,3\}$ is the discrete carry level (none, watch, elevated, lockdown), $\mathrm{Sens}(a_t)\in[0,1]$ maps the proposed action to its consequence level from a fixed tool-sensitivity table, $\Gamma(c_t)$ is the corresponding sensitivity ceiling, and $\theta_c=0.08$ is the continuity threshold defined in Section~\ref{sec:continuity}. The deployed policy additionally distinguishes tool-output downhill transport from tool-call uphill transport; for example, an injected envelope in a read-only tool output is treated as passive pending Cleave rather than blocked immediately.
+
+This rule separates detection from authorization. High Fold risk can stop transport. Otherwise, a transition becomes active only when the proposed action exceeds the current sensitivity ceiling and lacks sufficient continuity support. Benign reading, summarization, or low-consequence continuation remains passive and can be repaired instead of withheld.
+
+Gate also prevents triple-counting of weak drift signals. It consumes Fold's discrete provenance tags and the current carry state; it does not recompute every Fold score or duplicate the reflection detector. Given what Fold sensed and what Cleave has already repaired, Gate decides whether the next movement is passive, active, or blocked.
+
+\subsection{Cleave: Repair Without Over-Withholding}
+
+\textsc{Cleave} removes transient transport material after Gate has authorized repair. Examples include injected instruction envelopes, routing hints, and metadata that exist only to influence the harness or the agent's control flow. The goal is to remove the part that should not cross into trusted continuation while preserving factual content needed for the task.
+
+Formally, let $M_\sigma(z_t)$ be the set of removable markers under repair scope $\sigma$. The scope $\sigma_t$ is determined jointly by the carry state $c_t$ and the Gate mode $G_t$:
+\begin{equation}
+    \sigma_t = \Sigma(c_t,G_t), \qquad
+    z'_t = z_t \setminus M_{\sigma_t}(z_t),
+\end{equation}
+where $\Sigma(\cdot)$ maps the current state variables to a discrete repair scope in $\{\textsc{None}, \textsc{Transit}, \textsc{Metadata}, \textsc{Strict}\}$. For passive transport, $\sigma_t$ is narrow and typically removes only envelopes or routing metadata. For authorized active transport, $\sigma_t$ may remove residual transport markers before the action is reconsidered under the repaired state. For blocked transport, $\sigma_t=\emptyset$: the system does not repair-and-pass content that Gate has decided should not move.
+
+This scope-dependent behavior gives Cleave an elastic role. \emph{Elastic Cleave} means that repair is allowed to relax stale contamination pressure after successful stripping, while preserving stricter authorization for consequential actions. A repaired passive read should not force the entire episode into lockdown; a high-consequence action after exposure still requires Gate authorization.
+
+After Cleave, the carry state is updated by both the previous state and the categories removed:
+\begin{equation}
+    c_{t+1} = U(c_t, G_t, M_{\sigma_t}(z_t)),
+\end{equation}
+where $U(\cdot)$ is the state transition function. When an injection envelope is removed successfully, the state records that the episode encountered untrusted transport, while also reducing pressure from stale pre-repair evidence. Repair therefore changes how strongly prior contamination constrains the next step without erasing the episode history.
+
+\subsection{Continuity as a Safety Object}
+\label{sec:continuity}
+
+The three stages above are connected by a single safety object: continuity. Many agent failures arise across multiple turns, when an agent repeatedly reprocesses contaminated evidence, rationalizes it in later reasoning, and eventually turns it into an action. This resembles rumination: a harmful fragment can remain alive by being restated as task context, critique, memory, or a benign-looking intermediate step. Local conditionals over individual messages are brittle in this setting because they do not represent whether the full trajectory remains aligned with the user's task after untrusted content has entered the loop.
+
+We model a trajectory $\tau$ as a sequence of observations $o_t$ and actions $a_t$:
+\begin{equation}
+    \tau = (o_0, a_0, o_1, a_1, \ldots, o_T, a_T),
+\end{equation}
+where the entire sequence is conditioned on a user objective $u$. The harness maintains a compact carry state $c_t$ at step $t$ representing the episode's current contamination and repair status. A proposed action $a_t$ is authorized if it remains continuous with the user objective above threshold $\theta_c$, or if its sensitivity remains below the ceiling allowed by $c_t$:
+\begin{equation}
+    \mathrm{Cont}(u, a_t) \geq \theta_c
+    \quad \text{or} \quad
+    \mathrm{Sens}(a_t) \leq \Gamma(c_t).
+\end{equation}
+
+In the implementation, continuity is deliberately narrow. For a proposed action $a_t$, the harness extracts only bindable argument values, such as recipients, message bodies, file names, or destination fields, while ignoring schema names and transport identifiers. The continuity score is computed as the maximum token Jaccard overlap between the user objective $u$ and these bindable values:
+\begin{equation}
+\begin{aligned}
+    \mathrm{Cont}(u,a_t)
+    &=
+    \max_{v\in \mathrm{Args}(a_t)}
+    \frac{|\mathrm{Tok}(u)\cap \mathrm{Tok}(v)|}
+         {|\mathrm{Tok}(u)\cup \mathrm{Tok}(v)|},
+\end{aligned}
+\end{equation}
+where $\mathrm{Args}(a_t)$ is the set of extracted bindable argument values from $a_t$, and $\mathrm{Tok}(\cdot)$ maps text to a set of unique lowercased alphanumeric tokens. We set $\theta_c=0.08$. The check asks whether the concrete values being externalized are supported by the user objective. It does not grant broad permission merely because an entity or recipient string appeared somewhere in the prompt.
+
+When reflective Fold warns but the proposed continuation is non-consequential or demonstrably continuous with the task, the harness softens the warning rather than ratcheting the whole episode into lockdown. Continuity is therefore realized across Fold (early evidence), Gate (directional authorization under $\Gamma$), and Cleave (state update after repair).
+
+\subsection{Lightweight Carry and Stage Communication}
+
+Carry is the compact episode-level state passed between Fold, Gate, and Cleave. Its role is to remember whether the episode has encountered untrusted transport, what kind of residue was detected, whether repair has occurred, and whether future actions should face a lower sensitivity ceiling. Carry is therefore the mechanism that lets the harness reason over time without treating every step as an isolated classification problem.
+
+The deployed carry state uses four levels $c_t\in\{0,1,2,3\}$ with sensitivity ceilings $\Gamma(c_t)\in\{1.0, 0.85, 0.70, 0.0\}$ for none, watch, elevated, and lockdown respectively. Level~1 (\emph{watch}) is set when an injection envelope is detected but may be repaired; it blocks only high-sensitivity outbound actions such as fund transfers or bulk messaging while allowing mid-sensitivity actions needed to finish benign tasks. Level~3 (\emph{lockdown}) is reserved for reflection drift, shuffle drift, or control drift and blocks sensitive uphill transport until repair or continuity evidence softens the state.
+
+An early version of the harness used a broader persistent carry state that retained reflection, shuffle, and drift markers across too many steps. Gate then sometimes blocked before Cleave could strip an injection envelope, yielding high over-withholding: in one stress-valid Slack setting the defense preserved security but completed only half of benign tasks. The final design narrows carry to the four-level scheme above plus three compact inter-stage signals: Fold's provenance tag, Gate's passive/active/blocked mode, and Cleave's repair feedback. This restores the intended order---sense, authorize, repair, then update state---without treating every prior warning as permanently binding.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Principal implementation parameters for the full harness configuration.}
+\label{tab:impl-params}
+\begin{tabular}{p{0.34\columnwidth}p{0.56\columnwidth}}
+\toprule
+Parameter & Value / rule \\
+\midrule
+Continuity threshold $\theta_c$ & $0.08$ token Jaccard on bindable args \\
+Reflection block threshold & $0.40$ on geometric drift signals \\
+Provenance block threshold & $0.20$ drift score \\
+Provenance carry threshold & $0.35$ drift score \\
+Projection dimension $d$ & $64$ \\
+Default shuffle rounds $K$ & $2$ (elastic up to $5$) \\
+Carry levels $c_t$ & $0/1/2/3$ $\rightarrow$ $\Gamma \in \{1.0, 0.85, 0.70, 0.0\}$ \\
+Cleave scopes & none, transit, metadata, strict \\
+Agent boundaries & tool output ingress, tool call egress \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Experimental Setup}
+
+\subsection{Evaluation Benchmarks and Threat Models}
+
+We evaluate the harness across two complementary settings.
+
+\begin{enumerate}
+    \item \textbf{AgentDojo interactive sweeps}: The harness is inserted into the standard AgentDojo agent pipeline at tool-output and tool-call boundaries. We evaluate representative environment suites spanning workspace, travel, banking, and Slack tasks. Attacks follow the AgentDojo indirect prompt-injection threat model: adversarial instructions are embedded in untrusted external observations such as emails, web pages, or shared messages. The main table aggregates batches drawn from a curated stress manifest in which each batch uses a user task, an injection task, and one of several AgentDojo attack templates (standard indirect instructions, persona-style rewrites, or education-framed variants).
+    \item \textbf{Targeted evasive-attack suite}: We additionally run scripted multi-step episodes designed to stress order-dependent smuggling. Six categories are included: task decomposition, cross-node fragmentation, external observation injection, schema-structured payload smuggling, rationalized semantic deception, and gradual risk escalation. This suite isolates Fold's shuffle supplement under controlled adversarial narratives rather than full sandbox task completion.
+\end{enumerate}
+
+\subsection{Compared Defenses and Models}
+
+Each AgentDojo batch compares four defenses on identical task--attack pairs:
+\begin{itemize}
+    \item \textbf{No defense}: the vanilla AgentDojo agent pipeline.
+    \item \textbf{Spotlighting with delimiting}: AgentDojo's prompt-level baseline that marks trusted and untrusted regions in the context.
+    \item \textbf{Learned prompt-injection detector}: AgentDojo's transformer-based input classifier baseline.
+    \item \textbf{Full harness (ours)}: the Fold--Gate--Cleave configuration with reflective Fold, feature-space shuffle, provenance tagging, metadata stripping at tool output, and lightweight carry feedback.
+\end{itemize}
+
+We evaluate two model backends:
+\begin{itemize}
+    \item \textbf{DeepSeek-Chat (V3)}: primary backend for the interactive sweeps.
+    \item \textbf{Llama-3-70B}: open-weight backend used to test cross-model transfer of the transport protocol.
+\end{itemize}
+
+\subsection{Stress-Gating Protocol}
+\label{sec:stress-gate}
+
+Indirect prompt-injection defenses can appear stronger when the underlying attack already fails against the undefended model. We therefore report paper-comparable security only on batches where the undefended baseline is actually under adversarial stress.
+
+For every evaluated batch, we first execute the task under the no-defense baseline. A batch is classified as \emph{stress-valid} when:
+\begin{equation}
+    \text{Security}_{\text{none}} < 90\%
+    \quad \text{and} \quad
+    \text{ASR}_{\text{none}} \geq 10\%.
+\end{equation}
+Batches outside this region represent cases where the adversarial payload was naturally ignored, misparsed, or resisted by the base model. We record all runs for architectural diagnosis, but only stress-valid batches enter Table~\ref{tab:main-results}.
+
+\subsection{Metrics and Evaluation Criteria}
+
+After stress gating, we report three metrics:
+\begin{itemize}
+    \item \textbf{Security ($1-\text{ASR}$)}: fraction of episodes where the injected malicious objective is prevented.
+    \item \textbf{Utility}: fraction of episodes where the user's benign objective is completed.
+    \item \textbf{Utility retention}: utility normalized against the no-defense baseline on the same batch:
+    \begin{equation}
+        \text{Retention}
+        =
+        \frac{\text{Utility}_{\text{harness}}}
+             {\text{Utility}_{\text{none}}}.
+    \end{equation}
+\end{itemize}
+
+The architectural progression in Figure~\ref{fig:utility-recovery} and drop-one ablation in Table~\ref{tab:module-ablation} are measured on a separate offline probe that replays a representative injected observation and a matrix of subsequent actions. They report mechanism-level utility--security behavior rather than full AgentDojo task completion.
+
+

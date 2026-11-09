@@ -1,0 +1,71 @@
+# Supplement evaluation manifest (P0–P2)
+# Results root: runs/supplement/  (see eval/supplement/results_store.py)
+
+p0:
+  framing_expand_v1:
+    description: DeepSeek-only attack-framing expansion (travel + extra workspace tasks); merge with 24-cond Table 3
+    profile: m1_framing_expand
+    script: scripts/run_m1_framing_expand.sh
+    status: queued_after_adaptive_plot
+    note: Does not replace Table 1; appendix confirmation of absolute framing rates
+  peer_deepseek_24cond:
+    description: Task Shield + MELON vs bio_04 on same manifest
+    script: eval/supplement/run_p0_peer_table.py
+    inputs:
+      peer: runs/paper_peer_baselines_deepseek_progress.json
+      main: runs/paper_m1_manifest_seed_bio_elastic_progress.json
+    docs: docs/eval/P0_PEER_BASELINES.md
+    status: data_ready  # export only
+
+p1:
+  adaptive_protocol_v1:
+    description: White-box + black-box adaptive red-team protocol
+    script: eval/supplement/run_p1_adaptive_smoke.py
+    docs: docs/eval/P1_ADAPTIVE_REDTEAM_PROTOCOL.md
+    github_survey: docs/eval/GITHUB_REDTEAM_SURVEY.md
+    integration: https://github.com/xhOwenMa/AutoDojo
+    status: protocol_ready
+    estimate_days: 10-15
+
+  threshold_sensitivity_v1:
+    description: One-at-a-time sweep of tau_b, theta_c, c_refl, tau_carry
+    script: eval/supplement/run_p2_threshold_sensitivity.py
+    stress_conditions: 18
+    model: deepseek
+    status: grid_ready
+    estimate_days: 3-4
+
+p2:
+  path_smuggle_v1:
+    script: eval/supplement/run_p2_path_smuggle.py
+    config: idea1_provenance_mlp_bio_04
+    known_gap: path_smuggle_heldout 0/4 in prior audit
+    status: scaffold_ready
+
+  multi_hop_carry_v1:
+    script: eval/supplement/run_p2_multi_hop_carry.py
+    status: scaffold_ready
+
+  atomic_retry_v1:
+    script: eval/supplement/run_p2_atomic_retry.py
+    status: scaffold_ready
+
+  mhj_temporal_v1:
+    script: eval/supplement/run_p2_mhj_temporal.py
+    loader: eval/loaders/mhj.py
+    status: scaffold_ready
+
+  idea2_summary_v1:
+    script: eval/supplement/run_p2_idea2_summary.py
+    status: scaffold_ready
+
+  ipiguard_integration_v1:
+    script: eval/supplement/run_p2_ipiguard_integration.py
+    repo: https://github.com/Greysahy/ipiguard
+    status: plan_only
+    estimate_days: 4-7
+
+orchestrator:
+  script: eval/supplement/run_all_supplement.py
+  dry_run_default: true
+  execute_flag: --execute-p2

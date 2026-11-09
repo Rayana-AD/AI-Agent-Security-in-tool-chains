@@ -1,0 +1,166 @@
+# M1 main-track curated live profile (see validation.md)
+# 50 tasks × 2 attacks × 2 injections × 8 defenses = 800 pairs / model
+
+m1:
+  suite_quotas:
+    workspace: 18
+    travel: 10
+    banking: 10
+    slack: 12
+
+  anchor_tasks:
+    workspace:
+      - user_task_32
+      - user_task_13
+      - user_task_15
+      - user_task_0
+      - user_task_2
+    travel:
+      - user_task_0
+      - user_task_1
+    banking:
+      - user_task_0
+      - user_task_1
+    slack:
+      - user_task_0
+      - user_task_1
+
+  attacks:
+    - important_instructions
+    - tool_knowledge
+
+  injection_tasks:
+    - injection_task_0
+    - injection_task_1
+
+  defenses:
+    - none
+    - tool_filter
+    - spotlighting_with_delimiting
+    - repeat_user_prompt
+    - transformers_pi_detector
+    - bio_idea1
+    - bio_idea1_provenance_reflection
+    - bio_idea1_provenance_reflection_meta_full
+
+  model_modes:
+    - deepseek
+    - openrouter_llama70
+
+  replicates: 1
+
+# Banking stress slice (batch1 extension): stronger adaptive attacks on same 10 tasks
+m1_banking_stress:
+  suite_quotas:
+    banking: 10
+  anchor_tasks:
+    banking:
+      - user_task_0
+      - user_task_1
+  attacks:
+    - important_instructions_persona
+    - important_instructions_education
+    - tool_knowledge
+    - tool_knowledge_persona
+  injection_tasks:
+    - injection_task_0
+  defenses:
+    - none
+    - spotlighting_with_delimiting
+    - repeat_user_prompt
+    - bio_idea1_provenance_reflection_meta_full
+  model_modes:
+    - deepseek
+  replicates: 1
+
+# Adaptive-IPI stress slice: slack + injection_task_1 + persona/tool-knowledge variants
+m1_stress:
+  suite_quotas:
+    slack: 12
+  anchor_tasks:
+    slack:
+      - user_task_0
+      - user_task_1
+      - user_task_2
+      - user_task_3
+      - user_task_4
+      - user_task_5
+      - user_task_6
+      - user_task_7
+      - user_task_8
+      - user_task_9
+      - user_task_10
+      - user_task_11
+  attacks:
+    - important_instructions
+    - tool_knowledge
+    - important_instructions_persona
+    - tool_knowledge_persona
+  injection_tasks:
+    - injection_task_1
+  defenses:
+    - none
+    - spotlighting_with_delimiting
+    - repeat_user_prompt
+    - bio_idea1_provenance_reflection_meta_full
+  model_modes:
+    - deepseek
+  replicates: 1
+
+# Appendix expansion of the attack-framing table (does NOT replace Table 1).
+# Incremental cells only: travel (new conditions) + extra workspace user tasks
+# (episode stability). Merge with the existing 24-condition DeepSeek progress
+# to report unfiltered n=8 conditions per framing.
+# 13 tasks × 4 attacks × 2 injections × 4 defenses, but banking/slack/workspace-26
+# are already cached — live delta is travel (2) + workspace extras (2) = 16 batches.
+m1_framing_expand:
+  suite_quotas:
+    workspace: 2
+    travel: 2
+  anchor_tasks:
+    workspace:
+      - user_task_32
+      - user_task_13
+    travel:
+      - user_task_0
+      - user_task_1
+  attacks:
+    - direct
+    - important_instructions
+    - important_instructions_education
+    - important_instructions_persona
+  injection_tasks:
+    - injection_task_0
+    - injection_task_1
+  defenses:
+    - none
+    - spotlighting_with_delimiting
+    - transformers_pi_detector
+    - bio_04
+  model_modes:
+    - deepseek
+  replicates: 1
+  description: DeepSeek-only framing expansion; appendix confirmation of absolute rates
+
+# Legacy small slice (workshop / quick smoke)
+workshop:
+  suite_quotas:
+    workspace: 5
+    travel: 2
+    banking: 2
+    slack: 2
+  anchor_tasks:
+    workspace: [user_task_32, user_task_13, user_task_15, user_task_0, user_task_2]
+    travel: [user_task_0, user_task_1]
+    banking: [user_task_0, user_task_1]
+    slack: [user_task_0, user_task_1]
+  attacks: [important_instructions]
+  injection_tasks: [injection_task_0]
+  defenses:
+    - none
+    - tool_filter
+    - spotlighting_with_delimiting
+    - repeat_user_prompt
+    - bio_idea1_provenance_reflection_meta_full
+  model_modes: [deepseek]
+  replicates: 1

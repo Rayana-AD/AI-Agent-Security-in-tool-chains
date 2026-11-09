@@ -1,0 +1,55 @@
+# Frozen main-table BioHarness config (historical paper runs).
+# Paper AgentDojo main results used bio_04 with optional Sens>Γ enabled by default
+# at runtime (HarnessConfig default was use_carry_sens_ceiling: true historically).
+#
+# Current optimized codebase defaults use_carry_sens_ceiling: false because
+# ceiling ablations showed Γ barely affects AgentDojo U/S. Use this profile to
+# reproduce the exact historical deployment; use idea1_provenance_mlp_bio_04 in
+# ablations.yaml for the optimized default.
+
+defenses:
+  bio_04_main_historical:
+    name: bio_04_main_historical
+    continuity_orchestration: fold_gate_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    use_carry_sens_ceiling: true
+    carry_sens_ceiling: [1.0, 0.85, 0.70, 0.0]
+    baseline: null
+
+  idea1_provenance_mlp_historical:
+    name: idea1_provenance_mlp_historical
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    use_carry_sens_ceiling: true
+    carry_sens_ceiling: [1.0, 0.85, 0.70, 0.0]
+    baseline: null

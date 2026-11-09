@@ -1,0 +1,58 @@
+model:
+  # backend: local | openai | huggingface
+  backend: huggingface
+
+  # --- local (transformers) ---
+  # Set when model.backend: local
+  path: null
+
+  # --- openai-compatible (OpenAI / DeepSeek / vLLM / Ollama) ---
+  # api_model: gpt-4o-mini
+  # base_url: https://api.openai.com/v1
+  # api_key: set via env OPENAI_API_KEY or configs/secrets.yaml openai_api_key
+
+  temperature: 0.0
+  max_new_tokens: 512
+  seed: 42
+
+# Hugging Face Inference (OpenAI-compatible chat API)
+# 1. cp configs/secrets.yaml.example configs/secrets.yaml
+# 2. Paste hf_... token into secrets.yaml → huggingface_api_key
+# 3. model.backend: huggingface (already set)
+huggingface:
+  # Strongest models verified on HF Inference router (free tier)
+  api_model: deepseek-ai/DeepSeek-V3
+  base_url: https://router.huggingface.co/v1
+
+providers:
+  deepseek:
+    api_model: deepseek-chat
+    base_url: https://api.deepseek.com/v1
+  openai:
+    api_model: gpt-4o-mini
+    base_url: https://api.openai.com/v1
+  openai_flagship:
+    api_model: gpt-4o-2024-08-06
+    base_url: https://api.openai.com/v1
+  openrouter:
+    api_model: openai/gpt-4o-2024-08-06
+    base_url: https://openrouter.ai/api/v1
+  openrouter_llama70:
+    api_model: meta-llama/llama-3.3-70b-instruct
+    base_url: https://openrouter.ai/api/v1
+  hf_llama:
+    api_model: meta-llama/Llama-3.3-70B-Instruct
+    base_url: https://router.huggingface.co/v1
+
+harness:
+  max_retries: 3
+  session_ttl_seconds: 600
+  default_shuffle_rounds: 2
+  max_shuffle_rounds: 5
+
+consistency:
+  embedding_threshold: 0.75
+  use_nli_sample_rate: 0.2
+
+gate:
+  strict_mode: false

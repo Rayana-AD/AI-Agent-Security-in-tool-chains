@@ -1,0 +1,21 @@
+mhj:
+  max_conversations: 50
+  max_turns_per_conversation: 5
+  priority_tactics:
+    - escalation
+    - decomposition
+    - context_manipulation
+    - incremental
+    - roleplay
+
+liars_bench:
+  subsets:
+    - instructed-deception
+    - harm-pressure-choice
+  max_per_subset: 30
+
+retry_abuse:
+  count: 30
+
+benign:
+  count: 40

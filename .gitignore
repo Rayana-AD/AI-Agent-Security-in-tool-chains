@@ -1,0 +1,51 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+runs/
+eval/datasets/cache/
+configs/secrets.yaml
+*.egg-info/
+dist/
+build/
+.cursor/
+presentation/
+.DS_Store
+
+# Paper / figures (local only)
+main.tex
+main_tmlr.tex
+references.bib
+AuthorKit27/
+figures/paper_results/
+BioPiP3.pdf
+BioHarness_supplement/
+
+# Vendored clones (see eval/supplement/AUTODOJO_INTEGRATION.md)
+third_party/
+
+# Internal release notes
+docs/GITHUB_PUBLIC_RELEASE.md
+docs/presentation/
+
+# Local artifacts
+*.pdf
+*.png
+*.zip
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+bstpath.log
+_latexmkrc
+.latexmkrc
+.python-version
+.vscode/
+cursor_*.md
+3cursor_*.md
+AuthorKit27.zip
+logs/
+tmlr-style-file-main/
+figures/

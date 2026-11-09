@@ -1,0 +1,713 @@
+configs:
+  full:
+    name: full_bio_harness
+    use_schema_fold: true
+    use_shuffle_fold: true   # supplement after schema
+    use_llm_shuffle_judge: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: true
+    baseline: null
+
+  idea1_only:
+    name: idea1_unidirectional_partition
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: null
+
+  idea1_provenance:
+    name: idea1_provenance_learned
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v1.json
+    provenance_block_threshold: 0.20
+    baseline: null
+
+  idea1_provenance_mlp:
+    name: idea1_provenance_mlp
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    baseline: null
+
+  idea1_provenance_mlp_reflection:
+    name: idea1_provenance_mlp_reflection
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    baseline: null
+
+  idea1_provenance_mlp_reflection_ipi_escalate:
+    name: idea1_provenance_mlp_reflection_ipi_escalate
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: escalate_pass
+    baseline: null
+
+  idea1_provenance_mlp_reflection_ipi_metadata:
+    name: idea1_provenance_mlp_reflection_ipi_metadata
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: metadata_strip
+    baseline: null
+
+  idea1_provenance_mlp_reflection_ipi_guided:
+    name: idea1_provenance_mlp_reflection_ipi_guided
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: withhold_guided
+    baseline: null
+
+  idea1_provenance_mlp_refl_meta_watch:
+    name: idea1_provenance_mlp_refl_meta_watch
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: metadata_strip
+    provenance_reflection_watch_carveout: true
+    provenance_per_tool_filter: true
+    provenance_task_fidelity_hint: true
+    baseline: null
+
+  idea1_provenance_mlp_refl_meta_light:
+    name: idea1_provenance_mlp_refl_meta_light
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: metadata_strip
+    provenance_reflection_watch_carveout: true
+    provenance_ipi_light_state: true
+    provenance_per_tool_filter: true
+    provenance_task_fidelity_hint: true
+    baseline: null
+
+  idea1_provenance_mlp_refl_meta_unified:
+    name: idea1_provenance_mlp_refl_meta_unified
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: metadata_strip
+    provenance_reflection_watch_carveout: true
+    provenance_ipi_light_state: true
+    provenance_per_tool_filter: true
+    provenance_task_fidelity_hint: true
+    baseline: null
+
+  idea1_provenance_mlp_refl_meta_full:
+    name: idea1_provenance_mlp_refl_meta_full
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: redis
+    agentdojo_ipi_output_mode: metadata_strip
+    provenance_reflection_watch_carveout: true
+    provenance_ipi_light_state: true
+    provenance_per_tool_filter: true
+    provenance_task_fidelity_hint: true
+    baseline: null
+
+  idea1_provenance_mlp_bio_04:
+    name: idea1_provenance_mlp_bio_04
+    continuity_orchestration: fold_gate_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    provenance_per_tool_filter: true
+    use_carry_sens_ceiling: false
+    use_carry_store: true
+    carry_store_backend: file
+    agentdojo_ipi_output_mode: metadata_strip
+    baseline: null
+
+  # Table 1 remeasure (defense label bio_remeasure): in-episode carry only, no file/Redis persist.
+  idea1_provenance_mlp_bio_remeasure:
+    name: idea1_provenance_mlp_bio_remeasure
+    continuity_orchestration: fold_gate_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    provenance_per_tool_filter: true
+    use_carry_sens_ceiling: false
+    use_carry_store: false
+    agentdojo_ipi_output_mode: metadata_strip
+    baseline: null
+
+  bio_05:
+    name: bio_05
+    continuity_orchestration: fold_gate_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    provenance_per_tool_filter: true
+    use_carry_store: true
+    carry_store_backend: file
+    agentdojo_ipi_output_mode: metadata_strip
+    baseline: null
+
+  bio_04_no_hard_rules:
+    name: bio_04_no_hard_rules
+    continuity_orchestration: fold_gate_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    use_reflection_probe: true
+    reflection_block_threshold: 0.40
+    reflection_dot_dim: 64
+    provenance_carry_decay_streak: 3
+    provenance_carry_tiered: true
+    use_carry_store: true
+    carry_store_backend: file
+    baseline: null
+
+  idea1_provenance_mlp_no_rules:
+    name: idea1_provenance_mlp_classifier_only
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_feature_shuffle: true
+    feature_shuffle_hard_rules: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    use_provenance_tagger: true
+    provenance_model_path: models/provenance_tagger_v2_mlp.json
+    provenance_block_threshold: 0.20
+    provenance_carry_decay_streak: 3
+    baseline: null
+
+  idea1_no_partition:
+    name: idea1_no_partition
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: false
+    use_cleave: true
+    use_elastic: false
+    baseline: null
+
+  idea1_no_cleave:
+    name: idea1_no_cleave
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: false
+    baseline: null
+
+  idea1_no_gate:
+    name: idea1_no_gate
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: null
+
+  idea1_gate_toolcall:
+    name: idea1_gate_toolcall_only
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    gate_nodes: [tool_call]
+    baseline: null
+
+  idea1_partition_only:
+    name: idea1_partition_only
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: null
+
+  idea2_only:
+    name: idea2_shuffle_supplement
+    use_schema_fold: true
+    use_shuffle_fold: true
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: true
+    baseline: null
+
+  idea2_agentdojo:
+    name: idea2_agentdojo_shuffle
+    use_schema_fold: false
+    use_shuffle_fold: true
+    use_llm_shuffle_judge: false
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: true
+    baseline: null
+
+  ablation_1:
+    name: ablation_no_shuffle
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: true
+    baseline: null
+
+  ablation_2:
+    name: ablation_free_jump
+    use_shuffle_fold: true
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: true
+    use_elastic: true
+    baseline: null
+
+  ablation_3:
+    name: ablation_no_cleave
+    use_shuffle_fold: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: false
+    use_elastic: true
+    baseline: null
+
+  ablation_4:
+    name: ablation_no_elastic
+    use_shuffle_fold: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: null
+
+  baseline_1:
+    name: langgraph_flat
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: false
+    baseline: langgraph_flat
+
+  baseline_2:
+    name: thrd_style
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: thrd_style
+
+  baseline_3:
+    name: semantic_smooth
+    use_shuffle_fold: false
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: false
+    baseline: semantic_smooth
+
+  schema_only:
+    name: schema_only_fold
+    use_schema_fold: true
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: false
+    baseline: null
+
+  full_llm_shuffle:
+    name: full_llm_shuffle_judge
+    use_schema_fold: true
+    use_shuffle_fold: true
+    use_llm_shuffle_judge: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: true
+    baseline: null
+
+  citation_gate_only:
+    name: citation_gate_only
+    use_schema_fold: false
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: false
+    use_citation_gate: true
+    citation_allowed_bib_files: [ref.bib]
+    baseline: null
+
+  full_citation:
+    name: full_citation_harness
+    use_schema_fold: true
+    use_shuffle_fold: true
+    use_unidirectional_gate: true
+    use_state_partition: true
+    use_cleave: true
+    use_elastic: true
+    use_citation_gate: true
+    citation_allowed_bib_files: [ref.bib]
+    baseline: null
+
+  tool_filter_baseline:
+    name: tool_filter_external
+    use_schema_fold: false
+    use_shuffle_fold: false
+    use_unidirectional_gate: false
+    use_state_partition: false
+    use_cleave: false
+    use_elastic: false
+    external_defense: tool_filter
+    baseline: tool_filter
+
+experiments:
+  exp_a_shuffle:
+    description: "想法2 — Schema + Shuffle补充 vs 仅Schema（测分片嵌入/语义欺骗）"
+    configs: [full, ablation_1, idea2_only, baseline_1]
+    attack_types: [fragmented_intra, fragmented_cross, mhj_temporal, deception]
+    include_benign: true
+
+  exp_b_channel:
+    description: "想法1 — 单向通道+状态分区 vs 自由跳转（测状态污染/回流套利）"
+    configs: [full, ablation_2, idea1_only, baseline_1]
+    attack_types: [state_pollution, retry_abuse]
+    include_benign: true
+
+  factorial_2x2:
+    description: "2×2 因子 — Shuffle × 单向分区"
+    configs: [full, idea1_only, idea2_only, baseline_1]
+    attack_types: null
+    include_benign: true
+
+  exp_c1_drattack:
+    description: "P0 Exp-C1 DrAttack/DRA 分解-重组攻击"
+    configs: [idea2_only, schema_only, ablation_1, full]
+    dataset: c1_drattack
+    include_benign: false
+
+  exp_c2_cross_node:
+    description: "P0 Exp-C2 跨节点语义分片"
+    configs: [idea2_only, schema_only, ablation_1, full]
+    dataset: c2_cross_node
+    include_benign: false
+
+  exp_c3_tool_injection:
+    description: "P1 Exp-C3 工具输出隐藏注入"
+    configs: [idea2_agentdojo, idea2_only, schema_only, full, idea1_only]
+    dataset: c3_tool_injection
+    include_benign: false
+
+  exp_c4_schema_smuggle:
+    description: "P1 Exp-C4 Schema 字段走私"
+    configs: [idea2_only, schema_only, ablation_1, full]
+    dataset: c4_schema_smuggle
+    include_benign: false
+
+  exp_c5_subtle_deception:
+    description: "P2 Exp-C5 无关键词 subtle deception"
+    configs: [idea2_agentdojo, idea2_only, schema_only, ablation_1, full]
+    dataset: c5_subtle_deception
+    include_benign: false
+
+  exp_c6_escalation:
+    description: "P2 Exp-C6 MHJ 升级 + 跨节点合并"
+    configs: [idea2_only, schema_only, ablation_1, full]
+    dataset: c6_escalation
+    include_benign: false
+
+  exp_idea2_all:
+    description: "P0-P2 全部 Idea2 攻击族"
+    configs: [idea2_only, schema_only, full]
+    dataset: idea2_all
+    include_benign: false
+
+  exp_c1_llm:
+    description: "C1 DrAttack — 规则 vs LLM shuffle judge"
+    configs: [idea2_only, full_llm_shuffle]
+    dataset: c1_drattack
+    include_benign: false
+
+  exp_c5_llm:
+    description: "C5 subtle deception — 规则 vs LLM shuffle judge"
+    configs: [idea2_only, full_llm_shuffle]
+    dataset: c5_subtle_deception
+    include_benign: false
+
+  exp_citation_hallucination:
+    description: "文献幻觉 — 严格 Citation Gate vs schema-only vs full"
+    configs: [citation_gate_only, full_citation, schema_only]
+    dataset: citation_hallucination
+    include_benign: true
+
+  exp_citation_agent_joint:
+    description: "Agent+文献联合 — tool 输出注入假引用 vs Citation Gate"
+    configs: [citation_gate_only, full_citation, schema_only, full]
+    dataset: citation_agent_joint
+    include_benign: true
+
+  exp_idea2_v2_focus:
+    description: "Idea2 v2 (idea2_agentdojo) vs legacy idea2 on C3/C5/C6 欺骗场景"
+    configs: [idea2_agentdojo, idea2_only, full, idea1_only, schema_only]
+    dataset: idea2_v2_focus
+    include_benign: false
+
+  exp_idea1_channel_ablation:
+    description: "Idea1 通道/层消融 — partition vs gate vs cleave vs gate@tool_call"
+    configs:
+      - idea1_only
+      - idea1_no_partition
+      - idea1_no_cleave
+      - idea1_no_gate
+      - idea1_gate_toolcall
+      - idea1_partition_only
+      - ablation_2
+    dataset: idea1_channel_mixed
+    include_benign: true
+
+  exp_idea1_subtle_pollution:
+    description: "Idea1 subtle/adaptive 污染 — 无 _routing_hint 标记"
+    configs:
+      - idea1_only
+      - idea1_provenance
+      - idea1_no_partition
+      - idea1_gate_toolcall
+      - full
+      - schema_only
+      - ablation_2
+    dataset: idea1_subtle_pollution
+    include_benign: false
+
+  exp_idea1_provenance_eval:
+    description: "Idea1 + 可学习 provenance tagger vs baseline"
+    configs:
+      - idea1_only
+      - idea1_provenance
+      - full
+    dataset: idea1_channel_mixed
+    include_benign: true
+
+  exp_idea1_provenance_generalization:
+    description: "Provenance 泛化 — in-distribution vs held-out paths vs rules-off ablation"
+    configs:
+      - idea1_provenance_mlp
+      - idea1_provenance_mlp_no_rules
+    dataset: idea1_provenance_generalization
+    include_benign: true
+
+  exp_provenance_reflection_ablation:
+    description: "Idea1 MLP + reflection + channel escalation (provenance-only, no cleave)"
+    configs:
+      - idea1_provenance_mlp
+      - idea1_provenance_mlp_reflection
+    dataset: idea1_provenance_generalization
+    include_benign: true
+
+  exp_agentdojo_pilot:
+    description: "AgentDojo 合成任务 — bio harness vs 外部 defense 基线"
+    configs: [full, idea2_only, schema_only, tool_filter_baseline]
+    dataset: agentdojo_synthetic
+    include_benign: true
+
+  exp_agentdojo_upstream:
+    description: "AgentDojo v1.2.2 完整 benchmark — 论文 defense vs Idea1/Idea2"
+    configs: [full, idea1_only, idea2_only, schema_only]
+    dataset: agentdojo_upstream
+    include_benign: false

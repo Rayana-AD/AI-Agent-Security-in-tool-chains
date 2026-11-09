@@ -1,0 +1,63 @@
+# AgentDojo upstream benchmark — paper baselines vs BioHarness Idea1/Idea2 v2
+benchmark_version: v1.2.2
+
+# Primary + secondary attacks (AgentDojo v1.2.2 registry).
+# Runner executes each attack; report stored under results_by_attack.
+attacks:
+  - tool_knowledge
+  - important_instructions
+  - injecagent
+
+# Legacy single-attack field (used when --attack passed without --attacks)
+attack: tool_knowledge
+
+suites:
+  - workspace
+  - travel
+  - banking
+  - slack
+
+paper_defenses:
+  - none
+  - tool_filter
+  - spotlighting_with_delimiting
+  - repeat_user_prompt
+
+# bio_idea2 (legacy) replaced by bio_idea2_v2 for AgentDojo-adapted shuffle+gate path
+bio_defenses:
+  - bio_idea1
+  - bio_idea1_provenance
+  - bio_idea1_provenance_reflection
+  - bio_idea2_v2
+  - bio_full
+
+model_mode: auto
+model_id: null
+
+model_priority:
+  - deepseek
+  - openrouter_llama70
+  - openai_flagship
+  - openai
+  - hf
+  - hf_llama
+
+logdir: runs/agentdojo_upstream
+
+# Full eval profile (scripts/run_full_benchmark_with_baselines.sh):
+#   attacks: tool_knowledge, important_instructions, injecagent
+#   strong baselines: tool_filter, transformers_pi_detector, repeat_user_prompt (+ none)
+#   bio: bio_idea1_provenance only (bio_idea1/bio_full in benchmark_20260629_224640)
+#   models: deepseek + openrouter_llama70 (parallel)
+
+# Supplementary eval (scripted + citation); see eval/run_supplementary_benchmarks.py
+supplementary:
+  citation_configs:
+    - citation_gate_only
+    - full_citation
+    - schema_only
+  idea2_v2_experiment: exp_idea2_v2_focus
+  llm_experiments:
+    - exp_c3_tool_injection
+    - exp_c5_subtle_deception
+  llm_sample_limit: 20

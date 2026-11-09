@@ -1,0 +1,23 @@
+\begin{abstract}
+Tool-using language agents are vulnerable to indirect prompt injection (IPI): malicious instructions embedded in untrusted tool outputs can be transported into later plans and actions. We present \emph{BioHarness}, a systems-level continuity protocol---not a new foundation model or formal verifier---that wraps existing agents at tool boundaries. Inspired by protein translocation, BioHarness runs three stages: \textsc{Fold} extracts provenance and cross-step consistency evidence; \textsc{Gate} authorizes transitions by direction and consequence; and \textsc{Cleave} removes injection envelopes while preserving task-relevant content, utilizing a lightweight carry state. Reflective sensing provides soft continuity feedback to soften lockdown for goal-aligned actions, rather than acting as a hard attack classifier. On AgentDojo against no defense, Spotlighting, and a learned detector, BioHarness reaches 98.1\% and 95.8\% stress-conditioned macro security on DeepSeek-Chat and Llama-3-70B while raising DeepSeek macro utility from 67.6\% to 92.6\%. Ablations attribute utility to metadata repair and security to feature-attribution reordering and goal-aligned authorization. Scope: evaluated on standard AgentDojo framings; we do not claim robustness to adaptive adversaries or parity with capability-enforced architectures.
+
+\vspace{0.5em}
+\noindent \textbf{Keywords:} Large Language Model Agents, Indirect Prompt Injection, System Security, Tool Use, Continuity Protocol
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+\paragraph{Setting and threat.}
+Tool-using language agents interleave reasoning with tool calls to complete multi-step tasks~\citep{yao2023react,debenedetti2024agentdojo}. This interface expands the attack surface: adversarial instructions embedded in untrusted tool outputs can be carried into later actions. This threat---\emph{indirect prompt injection} (IPI)~\citep{greshake2023indirect}---has delayed effects triggered only when a consequential action is proposed~\citep{liu2024formalizing}, differing from one-shot jailbreaks or memory poisoning~\citep{chen2024agentpoison}. Current evaluations inject these payloads directly into tool-mediated workflows~\citep{debenedetti2024agentdojo,zhan2024injecagent}.
+
+\paragraph{Defense layers and gap.}
+Defenses operate at several layers: prompt-level spotlighting~\citep{hines2024spotlighting}, learned input detectors~\citep{protectai2024pideetector}, and model fine-tuning for instruction privilege or preference optimization~\citep{wallace2024instruction,chen2025struq,chen2025secalign}. System-level approaches go further, enforcing capability policies~\citep{debenedetti2025camel} or verifying test-time goal alignment~\citep{jia2025taskshield}. While complementary, many deployments cannot afford to retrain the backbone or rewrite the agent into a capability-enforced interpreter. Lightweight wrappers remain appealing, yet often suffer from residual attack success or over-block legitimate tasks~\citep{debenedetti2024agentdojo}. Furthermore, adaptive evaluations show fixed defenses can be bypassed~\citep{zhan2025adaptive}, requiring honest scoping of claims.
+
+\paragraph{This work.}
+We treat agent safety as a \emph{transport} problem across boundaries---untrusted output entering the loop, and proposed calls leaving it. We introduce \emph{BioHarness}, a drop-in continuity protocol without model fine-tuning. Inspired by protein translocation, \textsc{Fold} stress-tests untrusted content; \textsc{Gate} authorizes transitions; and \textsc{Cleave} removes envelopes while preserving task fields. A carry state links steps, and reflective sensing provides soft continuity feedback (layer shifting) rather than a hard stop-rate maximizer. On stress-conditioned AgentDojo conditions, BioHarness achieves 98.1\% and 95.8\% macro security on DeepSeek-Chat and Llama-3-70B, with DeepSeek macro utility rising from 67.6\% to 92.6\%. Component ablations locate utility retention in metadata repair, and security gains in feature reordering and authorization. Condition-macro and episode-weighted estimands agree on direction for DeepSeek utility.
+
+\paragraph{Contributions.}
+(i)~A bio-inspired Fold--Gate--Cleave harness for boundary-level transport control without model fine-tuning.
+(ii)~AgentDojo results with stress/unfiltered/episode-weighted analyses, plus ablations attributing utility and security to specific modules.
+(iii)~Evidence that reflective sensing acts as soft continuity control (modest utility retention) rather than an independent ASR booster.

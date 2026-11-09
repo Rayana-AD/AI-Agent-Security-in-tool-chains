@@ -1,0 +1,37 @@
+m1_manifest_seed:
+  name: m1_manifest_seed
+  suite_quotas:
+    banking: 6
+    slack: 2
+    workspace: 1
+  anchor_tasks:
+    banking:
+    - user_task_2
+    - user_task_1
+    - user_task_0
+    - user_task_3
+    - user_task_5
+    - user_task_6
+    slack:
+    - user_task_0
+    - user_task_1
+    workspace:
+    - user_task_26
+  attacks:
+  - important_instructions
+  - important_instructions_education
+  - important_instructions_persona
+  - direct
+  injection_tasks:
+  - injection_task_0
+  - injection_task_1
+  defenses:
+  - none
+  - spotlighting_with_delimiting
+  - transformers_pi_detector
+  - bio_04
+  model_modes:
+  - deepseek
+  replicates: 1
+  stress_check: true
+  description: Auto-generated from stress_manifest spotlight gaps / none-usable cells
