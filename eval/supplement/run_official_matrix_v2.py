@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from bio_harness.harness.graph import build_runner
+from eval.attacks.mcp_skill_proxy import OUT_PATH as MCP_SKILL_PATH, write_dataset as write_mcp_skill
 from eval.attacks.fragmented_shuffle import generate_fragmented
 from eval.attacks.idea1_subtle_pollution import write_dataset as write_in_dist
 from eval.attacks.idea1_subtle_pollution_heldout import write_dataset as write_heldout
@@ -83,6 +84,10 @@ def load_suite(name: str, *, benign_limit: int = 10) -> list[dict]:
         return build_mhj_multihop_synthetic(20)
     if name == "liars_bench":
         return load_liars_subset(["instructed-deception", "harm-pressure-choice"], max_per_subset=20)
+    if name == "mcp_skill_proxy":
+        if not MCP_SKILL_PATH.is_file():
+            write_mcp_skill()
+        return read_jsonl(MCP_SKILL_PATH) + load_benign(benign_limit)
     raise ValueError(name)
 
 

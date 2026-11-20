@@ -1,8 +1,38 @@
 # AI agent security in tool chains
 
-[中文版说明](README.md)
+Middleware for **indirect prompt injection (IPI)** in tool-using agents: a **Fold → Gate → Cleave** boundary stack with cross-turn episode memory. **No backbone fine-tuning.**
 
-Middleware for **indirect prompt injection (IPI)** in tool-using agents. This repo provides a **Fold → Gate → Cleave** boundary protocol with cross-turn episode state. You can wire it into an agent loop **without** fine-tuning the backbone model.
+[中文版说明](README.zh.md)
+
+> ### 30-second snapshot
+>
+> | | |
+> |---|---|
+> | **What it is** | Guards at **tool output → model** and **model → tool call**: sanitize or withhold suspicious inbound data; block risky outbound calls; remember contamination across turns. |
+> | **Public numbers (AgentDojo)** | DeepSeek-Chat **stress-18**: security **38.0% → 100%**, task completion **67.6% → 92.6%**; **100%** security on all **24** conditions for DeepSeek and Llama-3-70B (Llama stress utility **64.6%**, capped by weaker planning). Offline structural suite (**111** attacks): full stack **100%** block rate. |
+> | **How you use it** | Drop guards into your agent loop / `build_pipeline("bio_04", …)`; or verify locally via **quick start** below — **no API keys** required for the default path. |
+>
+> Figures match paper-facing configs in this repo; re-run scripts and trust your local `runs/**/*.json`.
+
+---
+
+## What you can do with this repo
+
+1. **Wire middleware into your stack** — Sanitize inbound tool results and gate outbound tool calls before they run. Works with custom loops or AgentDojo `AgentPipeline` (**Path C** below).
+2. **Regression-test the protocol without LLMs** — Offline matrix returns block rates in minutes (CI-friendly).
+3. **Reproduce AgentDojo live numbers (API keys)** — Smoke one episode or a manifest slice; secrets stay in local `configs/secrets.yaml` (gitignored).
+
+---
+
+## Quick start (pick one)
+
+| Time | Goal | Command |
+|------|------|---------|
+| **~2 min** | Sanity check | After `pip install -e ".[dev]"` → `pytest -q` |
+| **~3–5 min** | Tests + one offline defense point (**first clone**) | `./scripts/github_quickstart.sh` |
+| **~5 min** | Live model smoke (**needs key**) | **Path B → Smoke run** below |
+
+You do **not** need to run every eval script on day one.
 
 ---
 
@@ -12,28 +42,26 @@ Agents consume untrusted tool outputs (email, files, listings, APIs). Attacks hi
 
 ## Method
 
-The protocol runs at two boundaries: **tool output → model** (inbound) and **model → tool call** (outbound).
+Two boundaries: **inbound** (tool → model) and **outbound** (model → tools).
 
 | Stage | Role |
 |-------|------|
-| **Fold** | Normalize outputs into typed fields; shuffle field order and test attribution stability; provenance tagging and reflective probes add risk signals. |
-| **Gate** | Asymmetric read vs write: inbound observation may pass after repair; high-impact outbound calls need **continuity** with the user goal. An episode store tracks prior contamination. |
-| **Cleave** | Strip instruction envelopes while keeping task cargo (listings, fields, etc.) so security does not zero out utility. |
+| **Fold** | Structure tool text; perturb field order to test attribution; lightweight risk signals before reasoning. |
+| **Gate** | Reads vs writes: allow repaired observation; strict checks on high-impact outbound actions aligned with the user goal. |
+| **Cleave** | Remove instruction **envelopes** while keeping task **cargo** (lists, fields) when they are separable. |
 
-Optional **Elastic** logic deepens shuffle checks when the session looks adversarial.
-
-- Library: `src/bio_harness/` (package name `bio-harness`)
+- Library: `src/bio_harness/` (`bio-harness` on pip)
 - AgentDojo hooks: `eval/agentdojo/bio_harness_guard.py`, `eval/agentdojo/pipeline_factory.py`
 
 ---
 
 ## Requirements
 
-| Goal | Python | Install extra | Notes |
-|------|--------|---------------|--------|
-| Unit tests + offline matrix | ≥ 3.10 | `pip install -e ".[dev]"` | No API keys |
-| AgentDojo live benchmark | ≥ 3.10 | `pip install -e ".[dev,agentdojo]"` | `configs/secrets.yaml` + vendored AgentDojo path below |
-| Some supplement live tracks | ≥ 3.10 | `pip install -e ".[supplement-live]"` | Extra `third_party` per script headers |
+| Goal | Python | Install | Notes |
+|------|--------|---------|--------|
+| Tests + offline matrix | ≥ 3.10 | `pip install -e ".[dev]"` | No API |
+| AgentDojo live | ≥ 3.10 | `pip install -e ".[dev,agentdojo]"` | `configs/secrets.yaml` + vendored AgentDojo |
+| Some live supplements | ≥ 3.10 | `pip install -e ".[supplement-live]"` | Extra `third_party` per script |
 
 ---
 
@@ -42,43 +70,25 @@ Optional **Elastic** logic deepens shuffle checks when the session looks adversa
 ```bash
 git clone https://github.com/Rayana-AD/AI-Agent-Security-in-tool-chains.git
 cd AI-Agent-Security-in-tool-chains
-
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,agentdojo]"
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+# pip install -e ".[dev,agentdojo]"   # only for live AgentDojo
 ```
 
-For live runs:
+For live runs only:
 
 ```bash
 cp configs/secrets.yaml.example configs/secrets.yaml
+# Set deepseek_api_key or huggingface_api_key; routing in configs/model.yaml
 ```
-
-Set at least one provider key in `configs/secrets.yaml` (e.g. `deepseek_api_key` or `huggingface_api_key`). Routing and fallbacks: `configs/model.yaml` (`model_mode: auto` walks `model_priority`).
 
 ---
 
-## 5-minute check (no API)
-
-```bash
-pytest -q
-```
-
-Expect all tests to pass.
-
----
-
-## Path 1: Offline attack matrix (good first step)
-
-Scripted harness on fixed samples—no external LLM calls.
+## Path A: Offline attack matrix (no API; good second step)
 
 ```bash
 python eval/supplement/run_official_matrix_v2.py
 ```
-
-Default: 7 suites × 4 configs (`schema_only`, `idea1_only`, `idea1_provenance_mlp_bio_04`, `bio_04_no_hard_rules`).
-
-**Output:** `runs/supplement/p2/official_matrix_v2/matrix_summary.json` (per-cell JSON under `cells/`).
 
 **Faster subset:**
 
@@ -88,53 +98,31 @@ python eval/supplement/run_official_matrix_v2.py \
   --configs idea1_provenance_mlp_bio_04
 ```
 
+**Output:** `runs/supplement/p2/official_matrix_v2/matrix_summary.json`
+
 **Library entry:**
 
 ```python
 from bio_harness.harness.graph import build_runner
-
 runner = build_runner("idea1_provenance_mlp_bio_04")
-# Same keys as configs/ablations.yaml; see eval/scripted_runner.py
 ```
-
-Optional audits: `eval/run_bio04_config_audit.py`, `eval/run_provenance_generalization_audit.py`, `eval/run_agentdojo_utility_bounds_audit.py`.
 
 ---
 
-## Path 2: AgentDojo live benchmark
+## Path B: AgentDojo live benchmark (API)
 
-### AgentDojo source path
-
-`eval/run_agentdojo_benchmark.py` prepends:
-
-```text
-third_party/AutoDojo/agentdojo/src
-```
-
-Use a full clone that includes `third_party/AutoDojo`, or vendor it per [`eval/supplement/AUTODOJO_INTEGRATION.md`](eval/supplement/AUTODOJO_INTEGRATION.md).
+Vendored source: `third_party/AutoDojo/agentdojo/src` — see [`eval/supplement/AUTODOJO_INTEGRATION.md`](eval/supplement/AUTODOJO_INTEGRATION.md) if missing.
 
 ### Smoke run
 
-With `configs/secrets.yaml` configured:
-
 ```bash
+pip install -e ".[dev,agentdojo]"
 python eval/run_agentdojo_benchmark.py --smoke \
   --model-mode deepseek \
   --defense none --defense bio_04
 ```
 
-- `--smoke`: `workspace`, `user_task_0`, two injection tasks.
-- Full stack pipeline alias: **`bio_04`** → config key **`idea1_provenance_mlp_bio_04`**.
-- Report: `runs/agentdojo_upstream/benchmark_<timestamp>/report.json`.
-
-**Example with explicit suites and defenses:**
-
-```bash
-python eval/run_agentdojo_benchmark.py \
-  --suite workspace --suite banking \
-  --defense none --defense spotlighting_with_delimiting --defense bio_04 \
-  --model-mode deepseek
-```
+Pipeline alias **`bio_04`** → config **`idea1_provenance_mlp_bio_04`**. Report: `runs/agentdojo_upstream/benchmark_<timestamp>/report.json`.
 
 ### Stress manifest (one batch)
 
@@ -142,11 +130,9 @@ python eval/run_agentdojo_benchmark.py \
 ./scripts/run_m1_manifest_seed.sh 1 1
 ```
 
-Defenses listed in `configs/stress_manifest_seed.yaml`. Full 24-batch runs are slow and incur API cost.
-
 ---
 
-## Path 3: Plug into your AgentDojo pipeline
+## Path C: Middleware on AgentDojo `AgentPipeline`
 
 ```python
 from eval.agentdojo.pipeline_factory import build_pipeline, resolve_llm
@@ -155,13 +141,7 @@ llm, llm_name, provider = resolve_llm("deepseek")
 pipeline = build_pipeline("bio_04", llm, llm_name, provider=provider)
 ```
 
-Guard classes in `eval/agentdojo/bio_harness_guard.py`:
-
-- `BioHarnessToolGuard` — inbound tool outputs
-- `BioHarnessPreToolGuard` — outbound tool calls
-- `BioHarnessEpisodeReset` — reset carry per episode
-
-Tune behavior via YAML (`configs/ablations.yaml`, `configs/paper_experiments.yaml`), not by forking guards unless you extend the protocol.
+Optional pieces: `BioHarnessToolGuard` (inbound), `BioHarnessPreToolGuard` (outbound), `BioHarnessEpisodeReset`. Tune via `configs/ablations.yaml` / `configs/paper_experiments.yaml`.
 
 ---
 
@@ -170,22 +150,28 @@ Tune behavior via YAML (`configs/ablations.yaml`, `configs/paper_experiments.yam
 | Pipeline `defense` | Harness config key | Use |
 |--------------------|--------------------|-----|
 | `bio_04` | `idea1_provenance_mlp_bio_04` | Default full stack |
-| `bio_remeasure` | `idea1_provenance_mlp_bio_remeasure` | Remeasure / carry profile |
-| `bio_04_minus_hard_rules` | same in `paper_experiments.yaml` | Ablate path hard rules |
-| `bio_04_no_hard_rules` | same in `ablations.yaml` | Offline matrix “w/o path” |
-| `bio_04_main_historical` | `paper_main_historical.yaml` | Older deployment (carry ceiling, etc.) |
+| `bio_remeasure` | `idea1_provenance_mlp_bio_remeasure` | Remeasure profile |
+| `bio_04_no_hard_rules` | `ablations.yaml` | Offline “w/o path rules” |
+| `bio_04_main_historical` | `paper_main_historical.yaml` | Older deployment |
 
 ---
 
-## Benchmarks at a glance
+## Results snapshot (paper-facing, script-reproducible)
 
-Numbers depend on model and manifest—treat your `runs/**/*.json` as ground truth.
+**AgentDojo live** (stress macro, conditions in merged progress JSON):
 
-| Track | Entry | Summary |
-|-------|--------|---------|
-| AgentDojo multi-suite | `run_agentdojo_benchmark.py`, `run_m1_manifest_seed.sh` | Full stack targets high macro security with cargo repair vs block-only detectors. |
-| Offline 7-suite matrix | `run_official_matrix_v2.py` | Schema-only fails on path/retry threats; full stack + path rules closes the gap. |
-| Adaptive supplements | `eval/supplement/run_golorial_agentvigil_slice.py`, etc. | Replay search-hardened payloads; inline exfil cases trade utility for containment. |
+| Model | Defense | Stress utility / security |
+|-------|---------|---------------------------|
+| DeepSeek-Chat | None | 67.6% / 38.0% |
+| DeepSeek-Chat | BioHarness | **92.6% / 100%** |
+| Llama-3-70B | None | 47.9% / 39.6% |
+| Llama-3-70B | BioHarness | **64.6% / 100%** |
+
+**Offline matrix** (111 discriminating attacks): full BioHarness **100%** block on five non-envelope suites; schema-only **~20–67%** depending on suite.
+
+**AgentVigil banking (9 goals):** MCTS breaks **3/9** metadata-exfil goals on undefended agent; same payloads **blocked** under BioHarness (user-task checks may fail on bill-payment geometry when poison is inline).
+
+Re-run manifests / matrix locally; your `runs/` JSON is ground truth.
 
 ---
 
@@ -205,4 +191,4 @@ tests/
 
 ## License
 
-See the root `LICENSE` file when present. Third-party benchmarks (AgentDojo, AutoDojo, …) keep their own licenses.
+See root `LICENSE`. Third-party benchmarks keep their own licenses.

@@ -15,6 +15,7 @@ rm -f "$OUT"
     BioPiP3.pdf \
     figures/paper_results/fig_end_to_end_frontier.pdf \
     figures/paper_results/fig_attack_type_tradeoff.pdf \
+    figures/paper_results/fig_attack_type_tradeoff_v2.pdf \
     figures/paper_results/fig_extended_suite_gap.pdf
 )
 echo "Wrote $OUT"

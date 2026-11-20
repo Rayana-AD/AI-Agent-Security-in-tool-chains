@@ -1,8 +1,38 @@
 # 工具链场景下的 AI Agent 安全
 
-在工具调用型 Agent 中，不可信的工具返回值可能携带 **间接提示注入（IPI）**，影响后续推理或触发越权操作。本仓库提供可插拔的 **Fold → Gate → Cleave** 边界协议及跨轮 episode 状态，**无需**对骨干模型做微调。
+在工具调用型 Agent 中，不可信的工具返回值可能携带 **间接提示注入（IPI）**，影响后续推理或触发越权操作。本仓库提供可插拔的 **Fold → Gate → Cleave** 边界中间件及跨轮 episode 状态，**无需**对骨干模型做微调。
 
 [English README](README.en.md)
+
+> ### 30 秒摘要
+>
+> | | |
+> |---|---|
+> | **做什么** | 在「工具返回 → 模型」和「模型 → 工具调用」两处加护栏：可疑入站输出可去毒或扣留，危险出站调用可拦截；多轮任务记住是否曾被污染。 |
+> | **公开结果（AgentDojo）** | DeepSeek-Chat **stress-18**：安全 **38.0% → 100%**，任务完成 **67.6% → 92.6%**；24 格全 conditions 上 DeepSeek 与 Llama-3-70B 均为 **100%** 安全（Llama stress 效用 **64.6%**，受模型规划能力限制）。离线结构逃逸 **111** 个 attack 子集上完整栈 **100%** 拦截。 |
+> | **你怎么用** | 已有 Agent 循环：接入 Guard / `build_pipeline("bio_04", …)`；只想验证：下面「最快上手」两条命令，**不需要 API 密钥**。 |
+>
+> 数字出自论文稿与仓库脚本可复现配置；本地重跑以 `runs/` 下 JSON 为准。
+
+---
+
+## 你能用这个仓库做什么
+
+1. **接进现有 Agent 框架（中间件）** — 在工具结果进入 LLM 前、在工具调用发出前插入本仓库的 Guard；与 LangChain / 自研循环 / AgentDojo `AgentPipeline` 均可对接（见下文 **路径 C**）。
+2. **用固定样本压测边界协议（免 API）** — 离线矩阵几分钟内给出 block rate，适合 CI 或改配置后的回归。
+3. **对齐 AgentDojo 主表（需 API）** — 冒烟一条 episode 或跑 manifest；密钥只在本地 `configs/secrets.yaml`，不进 git。
+
+---
+
+## 最快上手（三选一）
+
+| 耗时 | 目标 | 命令 |
+|------|------|------|
+| **~2 分钟** | 确认环境 | `pip install -e ".[dev]"` 后 `pytest -q` |
+| **~3–5 分钟** | 单测 + 一条离线防御曲线（推荐首次克隆） | `./scripts/github_quickstart.sh` |
+| **~5 分钟** | 真模型连通性（需密钥） | 见下方 **路径 B → 冒烟运行** |
+
+完整安装与三条深入路径见下文；**不必一次跑完全部评测脚本**。
 
 ---
 
@@ -42,35 +72,21 @@ Agent 会通过工具读取邮件、文件、目录和第三方 API。攻击者�
 ```bash
 git clone https://github.com/Rayana-AD/AI-Agent-Security-in-tool-chains.git
 cd AI-Agent-Security-in-tool-chains
-
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,agentdojo]"
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"          # 离线矩阵 + 单测
+# pip install -e ".[dev,agentdojo]"  # 需要 AgentDojo 在线评测时再装
 ```
 
-在线实验前复制密钥模板（文件已 gitignore）：
+**只有要调用真实模型时**再配置密钥（已 gitignore）：
 
 ```bash
 cp configs/secrets.yaml.example configs/secrets.yaml
+# 填写 deepseek_api_key 或 huggingface_api_key 等；路由见 configs/model.yaml
 ```
-
-在 `configs/secrets.yaml` 中填写至少一种后端密钥（例如 `deepseek_api_key` 或 `huggingface_api_key`）。模型优先级与路由见 `configs/model.yaml`；`model_mode: auto` 时会按 `model_priority` 依次尝试可用提供商。
 
 ---
 
-## 5 分钟自检（无需 API）
-
-用于确认环境与本仓库配置键一致：
-
-```bash
-pytest -q
-```
-
-预期：测试全部通过（约一两分钟，视机器而定）。
-
----
-
-## 路径 1：离线结构攻击矩阵（推荐入门）
+## 路径 A：离线结构攻击矩阵（免 API，推荐第二站）
 
 不调用外部 LLM，用脚本化 harness 在固定 JSONL/生成样本上跑 Fold–Gate–Cleave。
 
@@ -109,7 +125,7 @@ python eval/run_agentdojo_utility_bounds_audit.py
 
 ---
 
-## 路径 2：AgentDojo 在线基准
+## 路径 B：AgentDojo 在线基准（需 API）
 
 ### 准备 AgentDojo 源码
 
@@ -126,6 +142,7 @@ third_party/AutoDojo/agentdojo/src
 确认 `configs/secrets.yaml` 可用后：
 
 ```bash
+pip install -e ".[dev,agentdojo]"
 python eval/run_agentdojo_benchmark.py --smoke \
   --model-mode deepseek \
   --defense none --defense bio_04
@@ -156,7 +173,7 @@ python eval/run_agentdojo_benchmark.py \
 
 ---
 
-## 路径 3：接入自有 AgentDojo Pipeline
+## 路径 C：接入自有 AgentDojo Pipeline（中间件）
 
 在已有 `AgentPipeline` 项目中，用工厂函数挂载本仓库防御（需能 import `agentdojo` 与 `eval.agentdojo`）：
 
@@ -192,15 +209,22 @@ pipeline = build_pipeline("bio_04", llm, llm_name, provider=provider)
 
 ---
 
-## 评测结果概览
+## 评测结果概览（论文主结论，可脚本复现）
 
-以下为仓库内脚本可复现的趋势摘要；**具体数值取决于模型与 manifest**，以你本地 `runs/` 下生成的 JSON 为准。
+**AgentDojo live**（`merged_deepseek.json` / `merged_llama.json` 口径，stress 条件宏平均）：
 
-| 评测 | 脚本 | 概要 |
-|------|------|------|
-| AgentDojo 多套件 + 压力切片 | `run_agentdojo_benchmark.py`、`run_m1_manifest_seed.sh` | 完整栈在报告配置下可达高 macro security，并通过 inbound 修复与 continuity 缓解「只拦不修」带来的 utility 坍塌。 |
-| 离线 7 套件矩阵 | `run_official_matrix_v2.py` | 仅 schema 对路径走私、重试通道污染等不足；带 path 规则的完整栈显著提升 block rate。 |
-| AgentVigil 等 supplement | `eval/supplement/run_golorial_agentvigil_slice.py` 等 | 自适应搜索得到的 payload 重放；inline 渗出类场景可能优先安全。 |
+| 模型 | 防御 | Stress 效用 / 安全 | 备注 |
+|------|------|-------------------|------|
+| DeepSeek-Chat | 无 | 67.6% / 38.0% | stress-18 |
+| DeepSeek-Chat | BioHarness | **92.6% / 100%** | unfiltered 效用 94.4% |
+| Llama-3-70B | 无 | 47.9% / 39.6% | 容量消融 |
+| Llama-3-70B | BioHarness | **64.6% / 100%** | banking 多步受模型能力限制 |
+
+**离线结构矩阵**（`official_matrix_v2`，discriminating 111 attacks）：完整 BioHarness 在五类非 envelope 套件上 **100%** attack block rate；仅 schema 约 **20–67%**（因套件而异）。
+
+**自适应红队**（AgentVigil banking，9 goals）：MCTS 攻破无防御 **3/9** 元数据渗出目标；同一 payload 对 BioHarness 重放 **全部拦截**（付账单子任务上用户检查可能失败，与内联污染几何有关）。
+
+本地重跑：manifest / 离线矩阵脚本；**以你 `runs/` 产出为准**。
 
 ---
 

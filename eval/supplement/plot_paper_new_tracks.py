@@ -88,12 +88,7 @@ def _block(cells: dict, suite: str, cfg: str) -> float:
 
 
 def fig_extended_suite_dumbbell(cells: dict) -> None:
-    """Schema → BioHarness range, with path-rule ablation as a third marker.
-
-    Partition-only is omitted here (it tracks schema-only on 3/5 suites and is
-    reported in the paper table). Four overlapping series made the old Cleveland
-    plot unreadable; 0/100-only charts are tables, not figures.
-    """
+    """Three-stage progression: Schema-only → w/o Path → Full BioHarness."""
     suites = list(SUITE.keys())
     schema = np.array([_block(cells, s, "schema_only") for s in suites])
     nopath = np.array([_block(cells, s, "bio_04_no_hard_rules") for s in suites])
@@ -589,6 +584,12 @@ def fig_adaptive_stages() -> None:
 
 
 def main() -> None:
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
     setup_style()
     cells = (_load_matrix().get("cells") or {})
     fig_extended_suite_dumbbell(cells)
